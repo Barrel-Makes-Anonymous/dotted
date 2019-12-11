@@ -17,11 +17,8 @@ fn arg_iter() -> Option<IntoIter<String>> {
         None => None
     }
 }
-// get the parameters between options
-fn get_parameters<I>(arg_iter: I) -> Vec<String> 
-where
-    I:IntoIterator<Item = String>
-{
+// get the parameters passed for an option
+fn parameters(arg_iter: &mut IntoIter<String>) -> Vec<String> {
     let mut parameters:Vec<String> = vec!();
     for param in arg_iter {
         if param.starts_with('-') {
@@ -33,20 +30,22 @@ where
     parameters
 }
 // get the options in the order they were passed
-fn get_options<I>(arg_iter: I) -> Vec<String>
-where
-    I:IntoIterator<Item=String>
-{
+fn options() -> Vec<String> {
     let mut options:Vec<String> = vec!();
-    for option in arg_iter {
-        if option.starts_with('-') {
-            let mut option_chars = option.chars();
-            option_chars.next();
-            let option_string = String::from(option_chars.as_str());
-            if !option_string.is_empty() {
-                options.push(option_string);
+    match arg_iter() {
+        Some(args) => {
+            for option in args {
+                if option.starts_with('-') {
+                    let mut option_chars = option.chars();
+                    option_chars.next();
+                    let option_string = String::from(option_chars.as_str());
+                    if !option_string.is_empty() {
+                        options.push(option_string);
+                    }
+                }
             }
-        }
+        },
+        None => {}
     }
     options
 }
