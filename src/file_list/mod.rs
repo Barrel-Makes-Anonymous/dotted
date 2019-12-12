@@ -25,7 +25,9 @@ impl FileList {
         }
     }
     // return a Vec containing the names of the files
-    // at the end of the elements in the 'files' field
+    // at the end of the elements in the 'files' field.
+    // fails if a given file's name can't be converted to
+    // string to ensure returned Vec "lines up"
     pub fn file_names(&self) -> Vec<String> {
         let mut file_names:Vec<String> = vec!();
         for file in self.files.iter() {
