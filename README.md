@@ -22,3 +22,18 @@ The basic concept of dotted is that you create packages which hold files and whe
     * disable and then delete the packages listed
 * `dotted -i <files>`
     * move the packages located at the paths listed into the local data dir (`~/.local/share/dotted` on Linux) so that they can be referred to by name instead of by their full path.
+    
+#### Example Usage
+   Here is an example scenario in which dotted could be used:
+   
+   `dotted -a ~/.vimrc ~/.vim ~/.config/nvim/init.vim -p vim_configs`
+   
+   Adds some vim configuration files into a new package called "vim_configs." Packages are created when files are added to a package that does not already exist.
+   
+   `dotted -es vim_configs`
+   
+   Enables the package, "vim_configs" with symlinking. If the destinations of files within the package already exist, dotted will ask for permission before overwriting them. If I decided that I want to try out some other vim configs, I can safely disable my current ones without worrying about deleting them for good using
+   
+   `dotted -E vim_configs`
+   
+   This will remove any of the files that came from the "vim_configs" package without touching anything else.
