@@ -26,6 +26,18 @@ impl Package {
             package_info:package_info
         }
     }
+    pub fn find(name:String) -> Option<Self> {
+        let package_path = data_local_dir().join("dotted").join(name);
+        let info_path = package_path.join(".dotted");
+        if info_path.exists() {
+            let package_info = PackageInfo::new(package_path.to_path_buf());
+            return Some(Package {
+                package_path:package_path,
+                package_info:package_info
+            });
+        }
+        None
+    }
     pub fn add_files(&self, source_files:Vec<String>) {
         self.add_files_at(source_files.clone(), source_files);
     }
@@ -141,6 +153,17 @@ impl Package {
         file_op::symlink_files(&source_paths, &dest_paths);
     }
     pub fn disable(&self) {
+        let (source_list, dest_list) = self.package_info.read_info();
+        for link in dest_list.symlink_sources() {
+            match link {
+                Some((link_dest, link_source)) => {
+                    if file_op::path_parent(&link_source) == self.package_path {
+                        file_op::remove_file(&link_dest);
+                    }
+                },
+                None => {}
+            }
+        }
     }
 }
 fn data_local_dir() -> PathBuf {

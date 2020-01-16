@@ -10,12 +10,9 @@ pub fn copy_files(from_paths:&Vec<PathBuf>, to_paths:&Vec<PathBuf>)
     let mut successful_to:Vec<PathBuf> = vec!();
     for (from_path, to_path) 
     in from_paths.into_iter().zip(to_paths.into_iter()) {
-        match copy_file(from_path, to_path) {
-            Some((from, to)) => {
-                successful_from.push(from);
-                successful_to.push(to);
-            },
-            None => {}
+        if let Some((from, to)) = copy_file(from_path, to_path) {
+            successful_from.push(from);
+            successful_to.push(to);
         }
     }
     let from = PathList::from_vec(successful_from, false);
@@ -24,8 +21,15 @@ pub fn copy_files(from_paths:&Vec<PathBuf>, to_paths:&Vec<PathBuf>)
 }
 pub fn copy_file(from_path:&PathBuf, to_path:&PathBuf) 
 -> Option<(PathBuf, PathBuf)> {
-    // wacky break statement so we don't have to initialize the prompt
-    // in the if statement
+    if from_path == to_path {
+        eprintln!("Will not copy `{}` onto itself.", from_path.display());
+        return None;
+    }
+    if !from_path.exists() {
+        eprintln!("Cannot copy `{}` because it does not exist", 
+            from_path.display());
+        return None;
+    }
     if to_path.exists() {
         let prompt = format!("`{}` already exists. Overwrite it with `{}`? [y/N]",
             to_path.display(), from_path.display());
@@ -35,13 +39,48 @@ pub fn copy_file(from_path:&PathBuf, to_path:&PathBuf)
     } else {
         create_dir_for(to_path);
     }
-    match fs::copy(from_path, to_path) {
-        Ok(_b) => Some((from_path.to_path_buf(), to_path.to_path_buf())),
-        Err(e) => {
-            eprintln!("{}", e);
-            return None;
+    if from_path.is_dir() {
+        return copy_dir(from_path, to_path);
+    } else {
+        match fs::copy(from_path, to_path) {
+            Ok(_b) => Some((from_path.to_path_buf(), to_path.to_path_buf())),
+            Err(e) => {
+                eprintln!("{}", e);
+                return None;
+            }
         }
     }
+}
+fn copy_dir(from_path:&PathBuf, to_path:&PathBuf) 
+-> Option<(PathBuf, PathBuf)> {
+    let successfully_created_dir = create_dir(to_path);
+    if !successfully_created_dir {
+        println!("Could not create dir `{}`", to_path.display());
+        return None;
+    }
+    let entries = match from_path.read_dir() {
+        Ok(entries) => entries,
+        Err(e) => {
+            println!("Error: {}", e);
+            return None;
+        }
+    };
+    for entry in entries {
+        if let Ok(entry) = entry {
+            let entry = entry.path();
+            let entry_name = match entry.file_name() {
+                Some(name) => {
+                    match name.to_str() {
+                        Some(name_str) => name_str,
+                        None => break
+                    }
+                },
+                None => break
+            };
+            copy_file(&entry, &to_path.join(entry_name));
+        }
+    }
+    Some((from_path.to_path_buf(), to_path.to_path_buf()))
 }
 pub fn remove_files(paths:&Vec<PathBuf>) {
     for path in paths.into_iter() {
@@ -111,16 +150,25 @@ fn prompt_user(prompt:String, default_no:bool) -> bool {
     if input == letter || input == word {
         return default_no;
     }
+    println!("Skipping operation.");
     !default_no
 }
 pub fn create_dir_for(path:&PathBuf) {
     let parent = path_parent(path);
-    if !parent.exists() {
-        match fs::create_dir_all(parent) {
+    create_dir(&parent);
+}
+fn create_dir(path:&PathBuf) -> bool {
+    let mut created_dir = true;
+    if !path.exists() {
+        match fs::create_dir_all(path) {
             Ok(()) => {},
-            Err(e) => eprintln!("{}", e)
+            Err(e) => {
+                eprintln!("{}", e);
+                created_dir = false;
+            }
         }
     }
+    created_dir
 }
 pub fn path_parent(path:&PathBuf) -> PathBuf {
     match path.parent() {

@@ -13,16 +13,20 @@ fn arg_vec() -> Option<Vec<String>> {
 pub fn get_args() -> (Vec<String>, Vec<Vec<String>>) {
     let mut options:Vec<String> = vec!();
     let mut params:Vec<Vec<String>> = vec!();
-    let mut param_index = -1;
+    let mut param_index:i32 = -1;
     match arg_vec() {
         Some(args) => {
             for arg in args.into_iter() {
                 if arg.starts_with("-") {
-                    options.push(arg.replace("-", ""));
-                    parameters.push(vec!());
+                    if arg.starts_with("--") {
+                        options.push(arg.replace("--", ""));
+                    } else {
+                        options.push(arg.replace("-", ""));
+                    }
+                    params.push(vec!());
                     param_index += 1;
                 } else if param_index != -1 {
-                    parameters[param_index as usize].push(arg);
+                    params[param_index as usize].push(arg);
                 }
             }
         },

@@ -144,6 +144,7 @@ impl PackageInfo {
                     entry = Some((
                         source_paths[i].to_path_buf(), 
                         dest_paths[i].to_path_buf()));
+                    break;
                 }
             }
             results.push(entry);
