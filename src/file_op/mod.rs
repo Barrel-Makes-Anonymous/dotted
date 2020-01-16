@@ -1,4 +1,5 @@
 use crate::path_list::PathList;
+use crate::package::Package;
 use std::io;
 use std::fs;
 use std::path::PathBuf;
@@ -10,7 +11,7 @@ pub fn copy_files(from_paths:&Vec<PathBuf>, to_paths:&Vec<PathBuf>)
     let mut successful_to:Vec<PathBuf> = vec!();
     for (from_path, to_path) 
     in from_paths.into_iter().zip(to_paths.into_iter()) {
-        if let Some((from, to)) = copy_file(from_path, to_path) {
+        if let Some((from, to)) = copy_file(from_path, to_path, false) {
             successful_from.push(from);
             successful_to.push(to);
         }
@@ -19,7 +20,7 @@ pub fn copy_files(from_paths:&Vec<PathBuf>, to_paths:&Vec<PathBuf>)
     let to = PathList::from_vec(successful_to, false);
     (from, to)
 }
-pub fn copy_file(from_path:&PathBuf, to_path:&PathBuf) 
+pub fn copy_file(from_path:&PathBuf, to_path:&PathBuf, auto_confirm:bool) 
 -> Option<(PathBuf, PathBuf)> {
     if from_path == to_path {
         eprintln!("Will not copy `{}` onto itself.", from_path.display());
@@ -31,21 +32,24 @@ pub fn copy_file(from_path:&PathBuf, to_path:&PathBuf)
         return None;
     }
     if to_path.exists() {
-        let prompt = format!("`{}` already exists. Overwrite it with `{}`? [y/N]",
-            to_path.display(), from_path.display());
-        if !prompt_user(prompt, true) {
-            return None;
+        if !auto_confirm {
+            let prompt = format!("`{}` already exists. Overwrite it with `{}`? [y/N]",
+                to_path.display(), from_path.display());
+            if !prompt_user(prompt, true) {
+                return None;
+            }
         }
     } else {
         create_dir_for(to_path);
     }
     if from_path.is_dir() {
+        remove_file(to_path);
         return copy_dir(from_path, to_path);
     } else {
         match fs::copy(from_path, to_path) {
             Ok(_b) => Some((from_path.to_path_buf(), to_path.to_path_buf())),
             Err(e) => {
-                eprintln!("{}", e);
+                eprintln!("Error copying file: {}", e);
                 return None;
             }
         }
@@ -77,23 +81,29 @@ fn copy_dir(from_path:&PathBuf, to_path:&PathBuf)
                 },
                 None => break
             };
-            copy_file(&entry, &to_path.join(entry_name));
+            copy_file(&entry, &to_path.join(entry_name), true);
         }
     }
     Some((from_path.to_path_buf(), to_path.to_path_buf()))
 }
 pub fn remove_files(paths:&Vec<PathBuf>) {
     for path in paths.into_iter() {
+        if let Some(package) = Package::find_at(path.to_path_buf()) {
+            package.disable();
+        }
         remove_file(path);
     }
 }
 pub fn remove_file(path:&PathBuf) {
-    match fs::remove_file(path) {
-        Ok(()) => {},
-        Err(_e) => {
-            match fs::remove_dir_all(path) {
-                Ok(()) => {},
-                Err(e) => eprintln!("{}", e)
+    if path.exists() {
+        match fs::remove_file(path) {
+            Ok(()) => {},
+            Err(_e) => {
+                match fs::remove_dir_all(path) {
+                    Ok(()) => {},
+                    Err(e) => eprintln!("Error removing `{}`: {}", 
+                        path.display(), e)
+                }
             }
         }
     }
@@ -106,7 +116,7 @@ pub fn move_files(from_paths:&Vec<PathBuf>, to_paths:&Vec<PathBuf>)
 }
 pub fn move_file(from_path:&PathBuf, to_path:&PathBuf) 
 -> Option<(PathBuf, PathBuf)> {
-    let successful_move = copy_file(from_path, to_path);
+    let successful_move = copy_file(from_path, to_path, false);
     match &successful_move {
         Some((from, to)) => remove_file(&from),
         None => {}
@@ -119,12 +129,12 @@ pub fn symlink_files(from_paths:&Vec<PathBuf>, to_paths:&Vec<PathBuf>) {
         symlink_file(from_path, to_path);
     }
 }
-pub fn symlink_file(from_path:&PathBuf, to_path:&PathBuf) {
+pub fn symlink_file(from_path:&PathBuf, to_path:&PathBuf) -> bool {
     if to_path.exists() {
         let prompt = format!("`{}` already exists. Overwrite it with `{}`? [y/N]",
             to_path.display(), from_path.display());
         if !prompt_user(prompt, true) {
-            return;
+            return false;
         } else {
             remove_files(&vec![to_path.to_path_buf()]);
         }
@@ -132,9 +142,10 @@ pub fn symlink_file(from_path:&PathBuf, to_path:&PathBuf) {
         create_dir_for(to_path);
     }
     match unix::fs::symlink(from_path, to_path) {
-        Ok(()) => {},
-        Err(e) => eprintln!("{}", e)
+        Ok(()) => return true,
+        Err(e) => eprintln!("Error creating symlink: {}", e)
     }
+    false
 }
 fn prompt_user(prompt:String, default_no:bool) -> bool {
     println!("{}", prompt);
@@ -163,7 +174,7 @@ fn create_dir(path:&PathBuf) -> bool {
         match fs::create_dir_all(path) {
             Ok(()) => {},
             Err(e) => {
-                eprintln!("{}", e);
+                eprintln!("Error creating directory: {}", e);
                 created_dir = false;
             }
         }

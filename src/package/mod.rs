@@ -6,8 +6,8 @@ use crate::{file_op, path_list::PathList};
 use std::path::PathBuf;
 
 pub struct Package {
-    package_path:PathBuf,
-    pub package_info:PackageInfo
+    pub package_path:PathBuf,
+    package_info:PackageInfo
 }
 impl Package {
     pub fn new(name:String) -> Self {
@@ -38,8 +38,44 @@ impl Package {
         }
         None
     }
-    pub fn add_files(&self, source_files:Vec<String>) {
-        self.add_files_at(source_files.clone(), source_files);
+    pub fn new_at(package_path:PathBuf) -> Self {
+        let info_path = package_path.join(".dotted");
+        if !info_path.exists() {
+            file_op::create_dir_for(&info_path);
+            match File::create(&info_path) {
+                Ok(_file) => {},
+                Err(e) => panic!("{}", e)
+            }
+        }
+        let package_info = PackageInfo::new(package_path.to_path_buf());
+        Package {
+            package_path:package_path,
+            package_info:package_info
+        }
+    }
+    pub fn find_at(package_path:PathBuf) -> Option<Self> {
+        let info_path = package_path.join(".dotted");
+        if info_path.exists() {
+            let package_info = PackageInfo::new(package_path.to_path_buf());
+            return Some(Package {
+                package_path:package_path,
+                package_info:package_info
+            });
+        }
+        None
+    }
+    pub fn install(&self) {
+        self.disable();
+        let name = match self.package_path.file_name() {
+            Some(os_str) => {
+                match os_str.to_str() {
+                    Some(name_str) => name_str,
+                    None => panic!("Could not convert &OsStr to &str")
+                }
+            },
+            None => panic!("file_name() call failed")
+        };
+        file_op::move_file(&self.package_path, &data_local_dir().join(name));
     }
     pub fn add_files_at(
         &self, 
@@ -58,7 +94,7 @@ impl Package {
             copy_from.iter().zip(copy_to.iter()).zip(
             source_list.file_names().into_iter().zip(
             dest_list.path_strings().into_iter())) {
-            if file_op::copy_file(from, to).is_some() {
+            if file_op::copy_file(from, to, false).is_some() {
                 successful_names.push(name);
                 successful_dests.push(dest);
             }
@@ -131,10 +167,12 @@ impl Package {
             match entry_dest.read_link() {
                 Ok(link_source) => {
                     if file_op::path_parent(&link_source) == self.package_path {
-                        if file_op::move_file(
-                            &entry_dest, &PathBuf::from(&dest)).is_some() {
+                        if entry_dest != PathBuf::from(&dest) 
+                        && file_op::symlink_file(
+                            &entry_source, &PathBuf::from(&dest)) {
                             change_names.push(source);
                             change_paths.push(dest);
+                            file_op::remove_file(&entry_dest);
                         }
                         continue;
                     }
@@ -146,11 +184,18 @@ impl Package {
         }
         self.package_info.modify_entries(change_names, change_paths);
     }
-    pub fn enable(&self) {
+    //TODO make 1 helper function here
+    pub fn enable_symlink(&self) {
         let (source_list, dest_list) = self.package_info.read_info();
         let source_paths = source_list.file_paths();
         let dest_paths = dest_list.file_paths();
         file_op::symlink_files(&source_paths, &dest_paths);
+    }
+    pub fn enable_copy(&self) {
+        let (source_list, dest_list) = self.package_info.read_info();
+        let source_paths = source_list.file_paths();
+        let dest_paths = dest_list.file_paths();
+        file_op::copy_files(&source_paths, &dest_paths);
     }
     pub fn disable(&self) {
         let (source_list, dest_list) = self.package_info.read_info();

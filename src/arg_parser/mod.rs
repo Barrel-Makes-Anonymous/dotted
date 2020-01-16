@@ -1,5 +1,4 @@
 use std::env;
-use std::vec::IntoIter;
 
 /* Collect the arguments passed to the program into a vector
 (excluding the first which is the name of the executable) */
