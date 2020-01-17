@@ -1,4 +1,3 @@
-use crate::path_list::PathList;
 use crate::package::Package;
 use std::io;
 use std::fs;
@@ -6,37 +5,30 @@ use std::path::PathBuf;
 use std::os::unix;
 
 pub fn copy_files(from_paths:&Vec<PathBuf>, to_paths:&Vec<PathBuf>) 
-    -> (PathList, PathList) {
-    let mut successful_from:Vec<PathBuf> = vec!();
-    let mut successful_to:Vec<PathBuf> = vec!();
+    -> Vec<bool> {
+    let mut successful:Vec<bool> = vec!();
     for (from_path, to_path) 
     in from_paths.into_iter().zip(to_paths.into_iter()) {
-        if let Some((from, to)) = copy_file(from_path, to_path, false) {
-            successful_from.push(from);
-            successful_to.push(to);
-        }
+        successful.push(copy_file(from_path, to_path, false))
     }
-    let from = PathList::from_vec(successful_from, false);
-    let to = PathList::from_vec(successful_to, false);
-    (from, to)
+    successful
 }
 pub fn copy_file(from_path:&PathBuf, to_path:&PathBuf, auto_confirm:bool) 
--> Option<(PathBuf, PathBuf)> {
+-> bool {
     if from_path == to_path {
         eprintln!("Will not copy `{}` onto itself.", from_path.display());
-        return None;
-    }
-    if !from_path.exists() {
+        return false;
+    } else if !from_path.exists() {
         eprintln!("Cannot copy `{}` because it does not exist", 
             from_path.display());
-        return None;
+        return false;
     }
     if to_path.exists() {
         if !auto_confirm {
             let prompt = format!("`{}` already exists. Overwrite it with `{}`? [y/N]",
                 to_path.display(), from_path.display());
             if !prompt_user(prompt, true) {
-                return None;
+                return false;
             }
         }
     } else {
@@ -47,26 +39,26 @@ pub fn copy_file(from_path:&PathBuf, to_path:&PathBuf, auto_confirm:bool)
         return copy_dir(from_path, to_path);
     } else {
         match fs::copy(from_path, to_path) {
-            Ok(_b) => Some((from_path.to_path_buf(), to_path.to_path_buf())),
+            Ok(_b) => true,
             Err(e) => {
                 eprintln!("Error copying file: {}", e);
-                return None;
+                return false;
             }
         }
     }
 }
 fn copy_dir(from_path:&PathBuf, to_path:&PathBuf) 
--> Option<(PathBuf, PathBuf)> {
+-> bool {
     let successfully_created_dir = create_dir(to_path);
     if !successfully_created_dir {
         println!("Could not create dir `{}`", to_path.display());
-        return None;
+        return false;
     }
     let entries = match from_path.read_dir() {
         Ok(entries) => entries,
         Err(e) => {
             println!("Error: {}", e);
-            return None;
+            return false;
         }
     };
     for entry in entries {
@@ -84,7 +76,7 @@ fn copy_dir(from_path:&PathBuf, to_path:&PathBuf)
             copy_file(&entry, &to_path.join(entry_name), true);
         }
     }
-    Some((from_path.to_path_buf(), to_path.to_path_buf()))
+    true 
 }
 pub fn remove_files(paths:&Vec<PathBuf>) {
     for path in paths.into_iter() {
@@ -109,19 +101,24 @@ pub fn remove_file(path:&PathBuf) {
     }
 }
 pub fn move_files(from_paths:&Vec<PathBuf>, to_paths:&Vec<PathBuf>) 
-    -> (PathList, PathList) {
-    let successfully_moved = copy_files(from_paths, to_paths);
-    remove_files(&successfully_moved.0.file_paths());
-    successfully_moved
+    -> Vec<bool> {
+    let successful = copy_files(from_paths, to_paths);
+    let remove_paths:Vec<PathBuf> = from_paths
+        .into_iter()
+        .zip(successful.iter())
+        .filter(|(from_path, success)| **success)
+        .map(|(from_path, success)| from_path.to_path_buf())
+        .collect();
+    remove_files(&remove_paths);
+    successful
 }
 pub fn move_file(from_path:&PathBuf, to_path:&PathBuf) 
--> Option<(PathBuf, PathBuf)> {
-    let successful_move = copy_file(from_path, to_path, false);
-    match &successful_move {
-        Some((from, to)) => remove_file(&from),
-        None => {}
+-> bool {
+    let success = copy_file(from_path, to_path, false);
+    if success {
+        remove_file(from_path);
     }
-    successful_move
+    success
 }
 pub fn symlink_files(from_paths:&Vec<PathBuf>, to_paths:&Vec<PathBuf>) {
     for (from_path, to_path) 
