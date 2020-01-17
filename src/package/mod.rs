@@ -94,7 +94,7 @@ impl Package {
             copy_from.iter().zip(copy_to.iter()).zip(
             source_list.file_names().into_iter().zip(
             dest_list.path_strings().into_iter())) {
-            if file_op::copy_file(from, to, false).is_some() {
+            if file_op::copy_file(from, to, false) {
                 successful_names.push(name);
                 successful_dests.push(dest);
             }
