@@ -203,6 +203,10 @@ impl Package {
             match link {
                 Some((link_dest, link_source)) => {
                     if file_op::path_parent(&link_source) == self.package_path {
+                        if let Some(package) = 
+                            Package::find_at(link_dest.clone()) {
+                            package.disable();
+                        }
                         file_op::remove_file(&link_dest);
                     }
                 },
