@@ -15,7 +15,7 @@ pub fn get_args() -> (Vec<String>, Vec<Vec<String>>) {
     let mut param_index:i32 = -1;
     match arg_vec() {
         Some(args) => {
-            for arg in args.into_iter() {
+            for mut arg in args.into_iter() {
                 if arg.starts_with("-") {
                     if arg.starts_with("--") {
                         options.push(arg.replace("--", ""));
@@ -25,6 +25,9 @@ pub fn get_args() -> (Vec<String>, Vec<Vec<String>>) {
                     params.push(vec!());
                     param_index += 1;
                 } else if param_index != -1 {
+                    if arg.ends_with('/') || arg.ends_with('\') {
+                        arg.pop();
+                    }
                     params[param_index as usize].push(arg);
                 }
             }
