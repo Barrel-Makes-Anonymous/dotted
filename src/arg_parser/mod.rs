@@ -25,7 +25,7 @@ pub fn get_args() -> (Vec<String>, Vec<Vec<String>>) {
                     params.push(vec!());
                     param_index += 1;
                 } else if param_index != -1 {
-                    if arg.ends_with('/') || arg.ends_with('\') {
+                    if arg.ends_with('/') || arg.ends_with('\\') {
                         arg.pop();
                     }
                     params[param_index as usize].push(arg);
