@@ -75,7 +75,7 @@ impl Package {
             },
             None => panic!("file_name() call failed")
         };
-        file_op::move_file(&self.package_path, &data_local_dir().join(name));
+        file_op::move_file(&self.package_path, &data_local_dir().join("dotted").join(name));
     }
     pub fn add_files_at(
         &self, 
