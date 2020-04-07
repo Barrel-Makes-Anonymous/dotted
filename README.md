@@ -4,7 +4,7 @@
 ## Building
 Clone this repo, navigate into it and run `cargo build --release`. The binary will be located inside the repo at `target/release/dotted` You can then put the binary somewhere on your `$PATH` so that you can run it from the command line. You can find cargo [here](https://www.rust-lang.org/tools/install) or through your package manager. I will eventually put up binaries when I consider this project "stable."
 ## Usage
-The basic concept of dotted is that you create packages which hold files and where those files should be on the system. You can then enable these packages by either symlinking or copying them to their destinations. Packages can contain files that are not tracked by dotted, so you can easily use git or other tools to manage their contents.
+The point of dotted is to create packages which hold files and store where those files should be on the system. You can then enable these packages by either symlinking or copying them to their destinations. Packages can contain files that are not tracked by dotted, so you can easily use git or other tools to manage their contents. Dotted's format is also compatible with other methods of dotfile management. For example, a bare git repository can be used by including a .dotted file and filling out its contents appropriately.
 #### Options
 * `dotted -a <files> [-d <destinations>] -p <packages>`
     * add files listed to packages listed. If no destinations are specified, dotted will record the original location of each file.
