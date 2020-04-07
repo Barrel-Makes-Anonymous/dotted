@@ -11,7 +11,7 @@ The basic concept of dotted is that you create packages which hold files and whe
 * `dotted -r <files> -p <packages>` 
     * remove files listed in packages listed
 * `dotted -m <files> -d <destinations> -p <packages>` 
-    * move the each file listed in the packages listed to a new destination.
+    * move each file listed in the packages listed to the new destinations listed.
 * `dotted -es <packages>`
     * enable the packages listed via symlinking
 * `dotted -ec <packages>`
