@@ -32,12 +32,12 @@ The point of dotted is to create packages which hold files and store where those
    
    `dotted -a ~/.vimrc ~/.vim ~/.config/nvim/init.vim -p my_dotfiles`
    
-   Adds some vim configuration files into a new package called "vim_configs." Packages are created when files are added to a package that does not already exist.
+   Adds some vim configuration files into "my_dotfiles." Packages are created when files are added to a package that does not already exist.
    
    `dotted -es my_dotfiles`
    
-   Enables the package, "vim_configs" with symlinking. If the destinations of files within the package already exist, dotted will ask for permission before overwriting them. If I decided that I want to try out some other vim configs, I can safely disable my current ones without worrying about deleting them for good using
+   Enables the package, "my_dotfiles" with symlinking. If the destinations of files within the package already exist, dotted will ask for permission before overwriting them. If I decided that I want to try out some other vim configs, I can safely disable my current ones without worrying about deleting them for good using
    
    `dotted -E my_dotfiles`
    
-   This will remove any of the files that came from the "vim_configs" package without touching anything else.
+   This will remove any of the files that came from the "my_dotfiles" package without touching anything else.
