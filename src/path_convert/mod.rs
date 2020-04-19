@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::ffi::OsStr;
 use std::env;
+use std::convert::Into;
 
 const MAIN_SEPARATOR:char = std::path::MAIN_SEPARATOR;
 // trait to make PathBuf and String interchangable
@@ -15,6 +16,17 @@ pub trait PathConvert {
         make_absolute(self.as_os_str())
     }
     fn as_os_str(&self) -> &OsStr;
+}
+// implement conversion traits for pathconvert
+impl Into<String> for PathConvert {
+    fn into(self) -> String {
+        self.name()
+    }
+}
+impl Into<PathBuf> for PathConvert {
+    fn into(self) -> PathBuf {
+        self.path()
+    }
 }
 // implementation for String
 impl PathConvert for String {
