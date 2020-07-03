@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::ffi::OsStr;
 use std::env;
-use std::convert::Into;
+use std::convert::From;
 
 const MAIN_SEPARATOR:char = std::path::MAIN_SEPARATOR;
 // trait to make PathBuf and String interchangable
@@ -16,17 +16,6 @@ pub trait PathConvert {
         make_absolute(self.as_os_str())
     }
     fn as_os_str(&self) -> &OsStr;
-}
-// implement conversion traits for pathconvert
-impl Into<String> for PathConvert {
-    fn into(self) -> String {
-        self.name()
-    }
-}
-impl Into<PathBuf> for PathConvert {
-    fn into(self) -> PathBuf {
-        self.path()
-    }
 }
 // implementation for String
 impl PathConvert for String {
@@ -78,8 +67,8 @@ fn make_absolute(path:&OsStr) -> PathBuf {
     path
 }
 fn current_dir() -> PathBuf {
-    if let Ok(dir) = env::current_dir() {
-        return dir;
-    }
-    panic!("Could not access current directory");
+    env::current_dir().unwrap_or_else(|e| {
+        eprintln!("{}", e);
+        PathBuf::new()
+    })
 }

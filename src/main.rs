@@ -11,32 +11,15 @@ fn main() {
     let (options, params) = arg_parser::get_args();
     if options.len() >= 1 {
         match options[0].as_str() {
-            "a" | "add-files" => {
-                add_files(options, params);
-            },
-            "r" | "remove-files" => {
-                remove_files(options, params);
-            },
-            "m" | "move-files" => {
-                move_files(options, params);
-            },
-            "e" | "es" | "enable-symlink" => {
-                enable_packages_symlink(params[0].clone());
-            },
-            "ec" | "enable-copy" => {
-                enable_packages_copy(params[0].clone());
-            },
-            "E" | "disable" => {
-                disable_packages(params[0].clone());
-            },
-            "R" | "remove-packages" => {
-                remove_packages(params[0].clone());
-            },
-            "i" | "install-packages" => {
-                install_packages(params[0].clone());
-            },
-            "help" => {
-            },
+            "a" | "add-files" => add_files(options, params),
+            "r" | "remove-files" => remove_files(options, params),
+            "m" | "move-files" => move_files(options, params),
+            "e" | "es" | "enable-symlink" => enable_packages_symlink(params[0].clone()),
+            "ec" | "enable-copy" => enable_packages_copy(params[0].clone()),
+            "E" | "disable" => disable_packages(params[0].clone()),
+            "R" | "remove-packages" => remove_packages(params[0].clone()),
+            "i" | "install-packages" => install_packages(params[0].clone()),
+            "help" => help(),
             _ => eprintln!("Unrecognized option `{}`", options[0])
         }
     } else {
@@ -209,6 +192,28 @@ fn install_packages(params:Vec<String>) {
     }
 }
 
+fn help() {
+    println!(
+"Usage:
+    add file(s) to package(s) (creates package if it doesn't exist):
+        dotted -a files -p packages
+    remove file(s) from package(s):
+        dotted -r files -p packages
+    move file(s) to destination(s) in package(s):
+        dotted -m files -d destinations -p packages
+    enable package(s) via symlinking:
+        dotted -es packages
+    enable package(s) via copying:
+        dotted -ec packages
+    disable package(s) (only works for packages enabled via symlinking):
+        dotted -E packages
+    disable and then delete package(s):
+        dotted -R packages
+    install the file(s) specified to the dotted package directiory:
+        dotted -i files
+Thank you for using dotted ! 💖"
+        );
+}
 fn help_prompt() {
     eprintln!("Try `dotted --help` for more information");
 }

@@ -51,8 +51,8 @@ impl PackageInfo {
         }
     }
     pub fn add_entries(&self,
-        mut names:Vec<String>,
-        mut dests:Vec<String>) {
+        names:Vec<String>,
+        dests:Vec<String>) {
         let mut output_string = String::new();
         let lines = self.read_info_file_lines();
         for line in lines {
@@ -102,7 +102,7 @@ impl PackageInfo {
             let line = line.unwrap();
             if should_parse(&line) {
                 match entry_parts(&line) {
-                    Some((name, dest)) => {
+                    Some((name, _dest)) => {
                         let mut found_match = false;
                         for i in 0..names.len() {
                             if name == names[i] {
@@ -155,7 +155,7 @@ impl PackageInfo {
         let mut source_list:Vec<PathBuf> = vec!();
         let mut dest_list:Vec<PathBuf> = vec!();
         let info_file_lines = self.read_info_file_lines();
-        for (line_number, line) in info_file_lines.enumerate() {
+        for (_line_number, line) in info_file_lines.enumerate() {
             let line = line.unwrap();
             if should_parse(&line) {
                 match entry_parts(&line) {

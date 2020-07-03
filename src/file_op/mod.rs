@@ -100,18 +100,6 @@ pub fn remove_file(path:&PathBuf) {
         }
     }
 }
-pub fn move_files(from_paths:&Vec<PathBuf>, to_paths:&Vec<PathBuf>) 
-    -> Vec<bool> {
-    let successful = copy_files(from_paths, to_paths);
-    let remove_paths:Vec<PathBuf> = from_paths
-        .into_iter()
-        .zip(successful.iter())
-        .filter(|(from_path, success)| **success)
-        .map(|(from_path, success)| from_path.to_path_buf())
-        .collect();
-    remove_files(&remove_paths);
-    successful
-}
 pub fn move_file(from_path:&PathBuf, to_path:&PathBuf) 
 -> bool {
     let success = copy_file(from_path, to_path, false);
@@ -127,22 +115,27 @@ pub fn symlink_files(from_paths:&Vec<PathBuf>, to_paths:&Vec<PathBuf>) {
     }
 }
 pub fn symlink_file(from_path:&PathBuf, to_path:&PathBuf) -> bool {
-    if to_path.exists() {
-        let prompt = format!("`{}` already exists. Overwrite it with `{}`? [y/N]",
-            to_path.display(), from_path.display());
-        if !prompt_user(prompt, true) {
-            return false;
+    let to_path_link = to_path.read_link();
+    // if the destination file already points to the source file
+    if !to_path_link.is_ok() || &to_path_link.unwrap() != from_path {
+        if to_path.exists() {
+            let prompt = format!("`{}` already exists. Overwrite it with `{}`? [y/N]",
+                                 to_path.display(), from_path.display());
+            if !prompt_user(prompt, true) {
+                return false;
+            } else {
+                remove_files(&vec![to_path.to_path_buf()]);
+            }
         } else {
-            remove_files(&vec![to_path.to_path_buf()]);
+            create_dir_for(to_path);
         }
-    } else {
-        create_dir_for(to_path);
+        match unix::fs::symlink(from_path, to_path) {
+            Ok(()) => return true,
+            Err(e) => eprintln!("Error creating symlink: {}", e)
+        }
+        return false;
     }
-    match unix::fs::symlink(from_path, to_path) {
-        Ok(()) => return true,
-        Err(e) => eprintln!("Error creating symlink: {}", e)
-    }
-    false
+    true
 }
 fn prompt_user(prompt:String, default_no:bool) -> bool {
     println!("{}", prompt);

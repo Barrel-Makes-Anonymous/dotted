@@ -128,10 +128,10 @@ impl Package {
             .map(|entry| entry.unwrap());
         let remove_dests:Vec<PathBuf> = remove_entries
             .clone()
-            .map(|(source, dest)| dest)
+            .map(|(_source, dest)| dest)
             .collect();
         let remove_sources:Vec<PathBuf> = remove_entries
-            .map(|(source, dest)| source.to_path_buf())
+            .map(|(source, _dest)| source.to_path_buf())
             .collect();
         let remove_source_names = 
             PathList::from_vec(remove_sources.clone(), false).file_names();
@@ -140,9 +140,9 @@ impl Package {
             .into_iter()
             .filter(|link| link.is_some())
             .map(|link| link.unwrap())
-            .filter(|(link_dest, link_source)| 
+            .filter(|(_link_dest, link_source)| 
                 file_op::path_parent(&link_source) == self.package_path)
-            .map(|(link_dest, link_source)| link_dest)
+            .map(|(link_dest, _link_source)| link_dest)
             .collect();
         file_op::remove_files(&remove_sources);
         file_op::remove_files(&remove_dests);
@@ -159,7 +159,7 @@ impl Package {
         let change_entries = entries.into_iter().zip(
             change_list.file_names().into_iter().zip(
             to_list.path_strings().into_iter()))
-            .filter(|(entry, (source, dest))| entry.is_some())
+            .filter(|(entry, (_source, _dest))| entry.is_some())
             .map(|(entry, (source, dest))| (entry.unwrap(), (source, dest)));
         let mut change_names:Vec<String> = vec!();
         let mut change_paths:Vec<String> = vec!();
@@ -177,14 +177,13 @@ impl Package {
                         continue;
                     }
                 },
-                Err(e) => {}
+                Err(_e) => {}
             }
             change_names.push(source);
             change_paths.push(dest);
         }
         self.package_info.modify_entries(change_names, change_paths);
     }
-    //TODO make 1 helper function here
     pub fn enable_symlink(&self) {
         let (source_list, dest_list) = self.package_info.read_info();
         let source_paths = source_list.file_paths();
@@ -198,7 +197,7 @@ impl Package {
         file_op::copy_files(&source_paths, &dest_paths);
     }
     pub fn disable(&self) {
-        let (source_list, dest_list) = self.package_info.read_info();
+        let (_source_list, dest_list) = self.package_info.read_info();
         for link in dest_list.symlink_sources() {
             match link {
                 Some((link_dest, link_source)) => {
